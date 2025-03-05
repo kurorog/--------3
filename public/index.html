@@ -1,96 +1,77 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Интернет-магазин</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Form</title>
+    <link rel="stylesheet" href="/style.css">
+
 </head>
 <body>
-  <h1>Каталог товаров</h1>
-  <div id="product-list"></div>
+    <h1>Add a New Product</h1>
+    <h2>Product List</h2>
+    <ul id="productList"></ul>
 
-  <h2>Добавить новый товар</h2>
-  <form id="add-product-form">
-    <input type="text" id="title" placeholder="Название товара" required>
-    <input type="number" id="price" placeholder="Цена" required>
-    <textarea id="description" placeholder="Описание" required></textarea>
-    <button type="submit">Добавить товар</button>
-  </form>
+    <form id="productForm">
+        <label for="id">Product ID:</label>
+        <input type="text" id="id" name="id" required>
+        <label for="name">Product Name:</label>
+        <input type="text" id="name" name="name" required>
+        <label for="description">Product Description:</label>
+        <input type="text" id="description" name="description" required>
 
-  <script>
-    const productList = document.getElementById('product-list');
-    const addProductForm = document.getElementById('add-product-form');
+        <label for="price">Product Price:</label>
+        <input type="number" id="price" name="price" required>
+        <button type="submit">Add Product</button>
+    </form>
 
-    // Функция для получения списка товаров
-    async function fetchProducts() {
-      const response = await fetch('/products');
-      const products = await response.json();
-      productList.innerHTML = products.map(product => `
-        <div>
-          <h3>${product.title}</h3>
-          <p>Цена: ${product.price} руб.</p>
-          <p>${product.description}</p>
-          <button onclick="editProduct(${product.id})">Редактировать</button>
-          <button onclick="deleteProduct(${product.id})">Удалить</button>
-        </div>
-      `).join('');
-    }
+    <script>
+        function fetchProducts() {
+            fetch('/products')
+                .then(response => response.json())
+                .then(products => {
+                    const productList = document.getElementById('productList');
+                    productList.innerHTML = '';
+                    products.forEach(product => {
+                        const li = document.createElement('li');
+                        li.textContent = `ID: ${product.id}, Name: ${product.name}, Price: $${product.price}`;
+                        productList.appendChild(li);
+                    });
+                })
+                .catch(error => console.error('Error fetching products:', error));
+        }
 
-    // Функция для редактирования товара
-    async function editProduct(id) {
-      const product = await fetch(`/products/${id}`).then(res => res.json());
-      document.getElementById('title').value = product.title;
-      document.getElementById('price').value = product.price;
-      document.getElementById('description').value = product.description;
-      addProductForm.dataset.editingId = id; // Store the ID of the product being edited
-    }
+        // Fetch products when the page loads
+        window.onload = fetchProducts;
 
-    // Обработчик отправки формы
-    addProductForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const id = addProductForm.dataset.editingId; // Get the ID of the product being edited
-      const newProduct = {
-        title: document.getElementById('title').value,
-        price: document.getElementById('price').value,
-        description: document.getElementById('description').value,
-      };
+        document.getElementById('productForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const id = document.getElementById('id').value;
+            const name = document.getElementById('name').value;
+            const description = document.getElementById('description').value;
 
-      if (id) {
-        // If editing, update the product
-        await fetch(`/products/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(newProduct),
+            const price = document.getElementById('price').value;
+
+            fetch('/add-product', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id, name, description, price }),
+
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Product added successfully!');
+                    document.getElementById('productForm').reset();
+                } else {
+                    alert('Error adding product.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
         });
-        delete addProductForm.dataset.editingId; // Clear the editing ID
-      } else {
-        // If adding, create a new product
-        await fetch('/products', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(newProduct),
-        });
-      }
-
-      fetchProducts(); // Обновить список товаров
-      addProductForm.reset(); // Сбросить форму
-    });
-
-    // Функция для удаления товара
-    async function deleteProduct(id) {
-      await fetch(`/products/${id}`, {
-        method: 'DELETE',
-      });
-      fetchProducts(); // Refresh the product list
-    }
-
-    // Инициализация
-    fetchProducts();
-  </script>
+    </script>
 </body>
 </html>

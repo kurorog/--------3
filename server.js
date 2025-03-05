@@ -2,6 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const app = express();
+app.use(express.static('public')); // Serve static files from the public directory
+
 const PORT = 3000;
 
 const productsFilePath = __dirname + '/products.json'; // Ensure this path is correct
@@ -16,7 +18,13 @@ app.use((req, res, next) => {
 
 // Endpoint to add a product
 app.post('/add-product', (req, res) => {
-    const newProduct = req.body;
+    const newProduct = {
+        id: req.body.id,
+        name: req.body.name,
+        description: req.body.description,
+        price: req.body.price
+    };
+
 
     // Read existing products
     fs.readFile(productsFilePath, (err, data) => {
@@ -37,14 +45,29 @@ app.post('/add-product', (req, res) => {
     });
 });
 
+app.get('/products', (req, res) => {
+    fs.readFile(productsFilePath, (err, data) => {
+        if (err) {
+            return res.status(500).send('Error reading products file');
+        }
+        res.json(JSON.parse(data));
+    });
+});
+
 // Serve the index.html file
 app.get('/', (req, res) => {
     res.redirect('/admin');
 });
 
+
+app.get('/customer', (req, res) => {
+    res.sendFile(__dirname + '/public/customer.html');
+});
+
 app.get('/admin', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
 });
+
 
 
 // Endpoint to edit a product by ID
@@ -78,7 +101,7 @@ app.put('/update-product/:id', (req, res) => {
 // Endpoint to delete a product by ID
 app.delete('/remove-product/:id', (req, res) => {
     const productId = req.params.id;
-
+S
     fs.readFile(productsFilePath, (err, data) => {
         if (err) {
             return res.status(500).send('Error reading products file');
