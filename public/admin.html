@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Interface</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Admin Chat</h1>
+    <div id="chat-box"></div>
+    <input type="text" id="chat-input" placeholder="Type a message...">
+    <button id="send-button">Send</button>
+
+    <script>
+        // WebSocket connection for chat
+        const socket = new WebSocket('ws://localhost:3000');
+
+        socket.onmessage = function(event) {
+            const chatBox = document.getElementById('chat-box');
+            const message = document.createElement('div');
+            message.textContent = event.data;
+            chatBox.appendChild(message);
+        };
+
+        document.getElementById('send-button').onclick = function() {
+            const chatInput = document.getElementById('chat-input');
+            socket.send(chatInput.value);
+            chatInput.value = '';
+        };
+    </script>
+</body>
+</html>
