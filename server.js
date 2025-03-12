@@ -3,12 +3,18 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 const { graphqlHTTP } = require('express-graphql');
 const { buildSchema } = require('graphql');
+const { GraphQLString, GraphQLFloat } = require('graphql');
+
 const WebSocket = require('ws');
 
 const app = express();
 app.use(express.static('public')); // Serve static files from the public directory
 
-const PORT = 3000;
+const PORT = 3004;
+
+
+
+
 const productsFilePath = __dirname + '/products.json'; // Ensure this path is correct
 
 app.use(bodyParser.json());
@@ -29,15 +35,22 @@ const schema = buildSchema(`
     }
 
     type Query {
-        products: [Product]
+        products(name: String, price: Float): [Product]
     }
 `);
 
 // Root resolver
 const root = {
-    products: () => {
+    products: (args) => {
         const data = fs.readFileSync(productsFilePath);
-        return JSON.parse(data);
+        const products = JSON.parse(data);
+        if (args.name) {
+            return products.filter(product => product.name.includes(args.name));
+        }
+        if (args.price) {
+            return products.filter(product => product.price === args.price);
+        }
+        return products;
     }
 };
 
@@ -75,13 +88,6 @@ server.on('upgrade', (request, socket, head) => {
 
 // Other existing endpoints...
 
-
-// Log incoming requests
-app.use((req, res, next) => {
-    console.log(`Received ${req.method} request for '${req.url}'`);
-    next();
-});
-
 // Endpoint to add a product
 app.post('/add-product', (req, res) => {
     const newProduct = {
@@ -90,7 +96,6 @@ app.post('/add-product', (req, res) => {
         description: req.body.description,
         price: req.body.price
     };
-
 
     // Read existing products
     fs.readFile(productsFilePath, (err, data) => {
@@ -125,7 +130,6 @@ app.get('/', (req, res) => {
     res.redirect('/admin');
 });
 
-
 app.get('/customer', (req, res) => {
     res.sendFile(__dirname + '/public/customer.html');
 });
@@ -133,8 +137,6 @@ app.get('/customer', (req, res) => {
 app.get('/admin', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
 });
-
-
 
 // Endpoint to edit a product by ID
 app.put('/update-product/:id', (req, res) => {
@@ -167,7 +169,7 @@ app.put('/update-product/:id', (req, res) => {
 // Endpoint to delete a product by ID
 app.delete('/remove-product/:id', (req, res) => {
     const productId = req.params.id;
-S
+
     fs.readFile(productsFilePath, (err, data) => {
         if (err) {
             return res.status(500).send('Error reading products file');

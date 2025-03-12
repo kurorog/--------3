@@ -32,52 +32,36 @@
             chatInput.value = '';
         };
 
-        function fetchProducts() {
-            fetch('/products')
-                .then(response => response.json())
-                .then(products => {
-                    const productList = document.getElementById('productList');
-                    productList.innerHTML = '';
-                    products.forEach(product => {
-                        const li = document.createElement('li');
-                        li.textContent = `ID: ${product.id}, Name: ${product.name}, Price: $${product.price}`;
-                        productList.appendChild(li);
-                    });
-                })
-                .catch(error => console.error('Error fetching products:', error));
-        }
-
-        // Fetch products when the page loads
-        window.onload = fetchProducts;
-
-        document.getElementById('productForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const id = document.getElementById('id').value;
-            const name = document.getElementById('name').value;
-            const description = document.getElementById('description').value;
-
-            const price = document.getElementById('price').value;
-
-            fetch('/add-product', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id, name, description, price }),
-
-            })
-            .then(response => {
-                if (response.ok) {
-                    alert('Product added successfully!');
-                    document.getElementById('productForm').reset();
-                } else {
-                    alert('Error adding product.');
+        // GraphQL query to fetch products
+        const query = `
+            {
+                products {
+                    id
+                    name
+                    price
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
+            }
+        `;
+
+        // Fetch products from GraphQL endpoint
+        fetch('/graphql', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            const productList = document.getElementById('admin-product-list');
+            productList.innerHTML = ''; // Clear existing product list
+            data.data.products.forEach(product => {
+                const productItem = document.createElement('div');
+                productItem.textContent = `ID: ${product.id}, Name: ${product.name}, Price: $${product.price}`;
+                productList.appendChild(productItem);
             });
-        });
+        })
+        .catch(error => console.error('Error fetching products:', error));
     </script>
 </body>
 </html>

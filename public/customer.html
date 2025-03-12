@@ -19,10 +19,11 @@
         // GraphQL query to fetch products
         const query = `
             {
-                products {
-                    id
-                    name
-                    price
+        products(name: "", price: null) {
+            id
+            name
+            price
+
                 }
             }
         `;
