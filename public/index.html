@@ -3,29 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Form</title>
-    <link rel="stylesheet" href="/style.css">
-
+    <title>Admin Interface</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Add a New Product</h1>
-    <h2>Product List</h2>
-    <ul id="productList"></ul>
+    <h1>Admin Product Management</h1>
+    <div id="admin-product-list"></div>
 
-    <form id="productForm">
-        <label for="id">Product ID:</label>
-        <input type="text" id="id" name="id" required>
-        <label for="name">Product Name:</label>
-        <input type="text" id="name" name="name" required>
-        <label for="description">Product Description:</label>
-        <input type="text" id="description" name="description" required>
-
-        <label for="price">Product Price:</label>
-        <input type="number" id="price" name="price" required>
-        <button type="submit">Add Product</button>
-    </form>
+    <h2>Chat</h2>
+    <div id="admin-chat-box"></div>
+    <input type="text" id="admin-chat-input" placeholder="Type a message...">
+    <button id="admin-send-button">Send</button>
 
     <script>
+        // WebSocket connection for chat
+        const socket = new WebSocket('ws://localhost:3000');
+
+        socket.onmessage = function(event) {
+            const chatBox = document.getElementById('admin-chat-box');
+            const message = document.createElement('div');
+            message.textContent = event.data;
+            chatBox.appendChild(message);
+        };
+
+        document.getElementById('admin-send-button').onclick = function() {
+            const chatInput = document.getElementById('admin-chat-input');
+            socket.send(chatInput.value);
+            chatInput.value = '';
+        };
+
         function fetchProducts() {
             fetch('/products')
                 .then(response => response.json())

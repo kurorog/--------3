@@ -3,37 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product List</title>
-    <link rel="stylesheet" href="/style.css">
+    <title>Customer Interface</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <h1>Product List</h1>
-    <ul id="productList"></ul>
+    <div id="product-list"></div>
 
-    <ul id="productList"></ul>
+    <h2>Chat</h2>
+    <div id="chat-box"></div>
+    <input type="text" id="chat-input" placeholder="Type a message...">
+    <button id="send-button">Send</button>
 
     <script>
-        function fetchProducts() {
-            fetch('/products')
-                .then(response => response.json())
-                .then(products => {
-                    const productList = document.getElementById('productList');
-                    productList.innerHTML = '';
-                    products.forEach(product => {
-                        const li = document.createElement('li');
-                        li.textContent = `ID: ${product.id}, Name: ${product.name}, Description: ${product.description}, Price: $${product.price}`;
-                        productList.appendChild(li);
-                    });
-                })
-                .catch(error => console.error('Error fetching products:', error));
-        }
+        // GraphQL query to fetch products
+        const query = `
+            {
+                products {
+                    id
+                    name
+                    price
+                }
+            }
+        `;
 
-        // Fetch products when the page loads
-        window.onload = fetchProducts;
+        // Fetch products from GraphQL endpoint
+        fetch('/graphql', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            const productList = document.getElementById('product-list');
+            data.data.products.forEach(product => {
+                const productItem = document.createElement('div');
+                productItem.textContent = `${product.name} - $${product.price}`;
+                productList.appendChild(productItem);
+            });
+        });
 
+        // WebSocket connection for chat
+        const socket = new WebSocket('ws://localhost:3000');
 
-        // Fetch products when the page loads
-        window.onload = fetchProducts;
+        socket.onmessage = function(event) {
+            const chatBox = document.getElementById('chat-box');
+            const message = document.createElement('div');
+            message.textContent = event.data;
+            chatBox.appendChild(message);
+        };
+
+        document.getElementById('send-button').onclick = function() {
+            const chatInput = document.getElementById('chat-input');
+            socket.send(chatInput.value);
+            chatInput.value = '';
+        };
     </script>
 </body>
 </html>

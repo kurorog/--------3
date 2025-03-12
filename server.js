@@ -1,14 +1,80 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
+const { graphqlHTTP } = require('express-graphql');
+const { buildSchema } = require('graphql');
+const WebSocket = require('ws');
+
 const app = express();
 app.use(express.static('public')); // Serve static files from the public directory
 
 const PORT = 3000;
-
 const productsFilePath = __dirname + '/products.json'; // Ensure this path is correct
 
 app.use(bodyParser.json());
+
+// Log incoming requests
+app.use((req, res, next) => {
+    console.log(`Received ${req.method} request for '${req.url}'`);
+    next();
+});
+
+// GraphQL schema
+const schema = buildSchema(`
+    type Product {
+        id: ID
+        name: String
+        description: String
+        price: Float
+    }
+
+    type Query {
+        products: [Product]
+    }
+`);
+
+// Root resolver
+const root = {
+    products: () => {
+        const data = fs.readFileSync(productsFilePath);
+        return JSON.parse(data);
+    }
+};
+
+// GraphQL endpoint
+app.use('/graphql', graphqlHTTP({
+    schema: schema,
+    rootValue: root,
+    graphiql: true,
+}));
+
+// WebSocket server
+const wss = new WebSocket.Server({ noServer: true });
+
+wss.on('connection', (ws) => {
+    ws.on('message', (message) => {
+        // Broadcast incoming message to all connected clients
+        wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(message);
+            }
+        });
+    });
+});
+
+// Upgrade HTTP server to handle WebSocket connections
+const server = app.listen(PORT, () => {
+    console.log(`Сервер запущен на http://localhost:${PORT}`);
+});
+
+server.on('upgrade', (request, socket, head) => {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+    });
+});
+
+// Other existing endpoints...
+
 
 // Log incoming requests
 app.use((req, res, next) => {
